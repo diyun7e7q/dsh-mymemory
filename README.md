@@ -1,81 +1,207 @@
 # dsh-mymemory
 
-**Long-term memory for DeepSeek Harness.** 把日常对话里值得留下的东西沉淀成结构化记忆，下次相关对话自动带上。
+**Long-term memory for [DeepSeek Harness](https://github.com/deepseek-ai) that does not wreck your prompt cache.**
 
-数据只落本机 SQLite：不接外部服务、不读凭据、不做遥测。
-
-## 特性
-
-- **自动抽取** — 会话结束时复用当前会话的 provider/model 抽取候选，不需要另配提取密钥。
-- **三级网关** — 精确哈希去重 → 近重复签名 → 模型仲裁；按作用域分桶，跨作用域不互相吞并。
-- **作用域隔离** — 个人记忆跨会话共享，项目记忆绑定工作目录。
-- **画像是文件** — `SOUL.md`（人格设定）与 `USER.md`（关于用户的记忆概括）明文落盘，面板里直接改，改完立即生效。
-- **可审的整理** — 「更新」只生成提案，点「采用」才写盘；手改过的措辞不会被模型静默覆盖。
-- **可追溯** — 每条记忆带来源、版本、墓碑；遗忘前落快照，误删能捞回。
-- **技能试用期** — 从已验证经验长出的技能先记 `candidate`，跨会话复现后才转正，避免一次性经验污染长期行为。
-- **零运行时依赖** — 除 Node 内置模块与宿主服务外不引入任何第三方包。
-
-## 工作原理
+Most memory plugins write a fresh summary into the system prompt every turn. The prefix changes, the cache dies, and the bill goes up. This one keeps the injected block small, named, and byte-stable — and keeps unconfirmed guesses out of it entirely.
 
 ```
-会话事件
-  → turn-stopping 异步队列（不阻塞对话）
-  → 抽取：宿主 llm 服务，provider/model 取自当前会话
-  → 判重：精确哈希 → 近重复签名 → 模型仲裁
-  → 落库：SQLite（事实 / 版本 / 墓碑 / 冲突）
-  → 注入：systemPrompt，按字节预算裁剪后拼入
+No cloud. No telemetry. No runtime dependencies.
+One SQLite file and two Markdown files, on your disk.
 ```
 
-抽取与注入之间隔着一道闸：候选先落 `pending`，只有用户亲口确认、显式记住或跨会话复现的内容才会转正。重复写入走 NOOP，语义相同的写入走 MERGE，冲突进收件箱等人工裁决。
+---
 
-## 安装
+## The problem
+
+Memory plugins tend to fail in three specific ways.
+
+**They poison the cache.** Recall is prepended or rewritten at the top of every request. Even a one-word change near the start of the prefix re-bills the whole context. A plugin that "saves tokens" by remembering things can easily cost more than it saves.
+
+**They drift.** Every extracted guess gets folded into the profile immediately. Add a model that likes to please, and after fifty turns your "user profile" is a polite fiction nobody wrote.
+
+**They are unauditable.** What got stored, why, from which turn, and what it replaced — usually unknowable. You cannot correct a memory you cannot see.
+
+## What you get
+
+| | |
+|---|---|
+| **Dual-track storage** | Structured facts in SQLite; the parts you actually edit — persona and profile — as plain `SOUL.md` / `USER.md`. Edit the file, next turn picks it up. No reindex, no restart. |
+| **Prefix-stable injection** | Injected as named `systemPrompt` sections with fixed order and lazy evaluation, under a hard byte budget. Candidates and `pending` records never enter the prompt. |
+| **Guarded consolidation** | Three gates before anything is stored: exact hash → near-duplicate signature (90% threshold) → model arbitration. Scoped per project/global, so a project note never swallows a global preference. |
+| **Preview before write** | The "update" action generates a proposal. Nothing touches your file until you accept it — hand-tuned wording survives. |
+| **Probation for skills** | Experience-derived skills start as `candidate`. They only become `verified` after recurring across sessions. One lucky turn cannot reshape long-term behaviour. |
+
+## Architecture
+
+```
+   conversation turns
+          │
+          ▼
+   turn-stopping hook ── async, never blocks the reply
+          │
+          ▼
+   extraction  (host llm service, current session's provider/model)
+          │
+          ▼
+   ┌──────────────── three-stage gate ────────────────┐
+   │ 1. exact hash        → NOOP (same sentence twice)│
+   │ 2. near-dup signature→ MERGE / promote pending   │
+   │ 3. model arbitration → keep both / supersede     │
+   │    scope-bucketed: project ≠ global              │
+   └──────────────────────────────────────────────────┘
+          │
+          ▼
+   ┌────────────── two-track persistence ─────────────┐
+   │ SQLite: facts · revisions · tombstones · conflicts│
+   │ Markdown: SOUL.md (persona) · USER.md (profile)   │
+   └──────────────────────────────────────────────────┘
+          │
+          ▼
+   fixed anchors in the system prompt  (order 80 / 85)
+   byte-clipped · fixed order · lazy text
+```
+
+## Prefix cache: zero per-turn invalidation
+
+A memory plugin can only destroy a prefix cache one way — by changing bytes near the start of the prompt. Most do it every single turn.
+
+```
+typical memory plugin            dsh-mymemory
+─────────────────────────────    ─────────────────────────────────
+summary rewritten every turn     named sections, fixed order 80 / 85
+grows with the memory count      hard caps: 4096 chars profile,
+                                512 tokens recall, 0 core
+guesses injected immediately     pending never injected — search only
+changes: the prefix              changes: the tail
+```
+
+Three properties, enforced in code rather than promised in prose:
+
+1. **Fixed anchors.** Injection goes through `ctx.systemPrompt.section({name, order, text})` — `mymemory-soul` at order 80, `mymemory-guide` at order 85, plus one context provider. Names and order never change at runtime, so the block's position in the prefix is constant.
+2. **Hard byte budgets.** Profile clipped to `profileBudgetChars` (default **4096 chars**), `STATE.md` to **800 chars**, recall to `retrievalBudget` (**512 tokens**), `coreBudget` **0**. Remembering fifty more things cannot silently grow the prefix.
+3. **Unconfirmed content stays out.** `candidate` skills and `pending` memories are returned by `search` on demand — never injected. The prompt only sees what survived the gates.
+
+So the only event that can invalidate the prefix is **the profile text actually changing** — and that is rate-limited on purpose: at most once per `minIntervalMs` (default 60 s) and at most `dailyLimit` (default 20) times a day, and the extractor is instructed to return nothing when there is no substantive change. In a normal working session that is zero to a handful of invalidations — not one per turn.
+
+*This is a statement about this plugin's own bytes. End-to-end hit rate depends on provider TTL, eviction and client-side rewriting, and is not claimed here. For scale only: the author's 744-request session reported 95.0% overall, most of it from context compression and upstream caching.*
+
+## Install
 
 ```bash
-# 从源码装进 DSH 的 profile
-npm install link:/path/to/dsh-mymemory
+# from a checkout
+git clone https://github.com/diyun7e7q/dsh-mymemory.git
+npm install link:/absolute/path/to/dsh-mymemory
 ```
 
-插件通过 `cordis.patch.yml` 自动进层栈。装完重开 DSH 生效。
+The plugin registers itself through `cordis.patch.yml` and appears in the plugin list after restarting the host.
 
-## 配置
+Requires Node **>= 24.9.0** (runs TypeScript sources through type stripping) and a host exposing the `llm` service.
+
+## Configuration
+
+Minimal, redacted:
 
 ```yaml
 - insert:
     - id: mymemory
       name: dsh-mymemory
       config:
-        dataDir: /path/to/memory   # 默认落在 DSH 数据目录下
+        dataDir: /path/to/memory     # defaults to the host data directory
 ```
 
-面板里可调：自动记忆开关、历史参考、抽取用量上限、画像字节预算、隐私清理。工程参数在配置文件里，界面只放日常会改的东西。
+Everything you would realistically tune lives in the panel; the rest lives here:
 
-## 数据与隐私
+| key | default | range | meaning |
+|---|---|---|---|
+| `profileBudgetChars` | 4096 | 512–16384 | cap on `USER.md` |
+| `retrievalBudget` | 512 | 0–8192 | tokens reserved for recalled facts |
+| `coreBudget` | 0 | 0–1024 | always-on facts (off by default) |
+| `maxResults` | 8 | 1–20 | records returned per recall |
+| `nearDupPercent` | 90 | 50–100 | similarity threshold for the second gate |
+| `dailyLimit` | 20 | 0–1000 | extraction calls per day |
+| `extractionInputChars` | 1000 | 16–4000 | input trim before extraction |
 
-事实、修订、墓碑、冲突与技能存在同一个 SQLite 文件里。没有云同步，没有遥测。与当前模型交互意味着送出去的那部分内容会到达模型服务商——本地存储不等于模型离线。
+## Memory model
 
-遗忘会清掉活动库正文、版本与派生对象，但不追溯 DSH 的历史会话，也不动模型服务商那边的记录。「不要再提」是暂停引用，原记录保留。
+- **Scope.** `global` (shared across sessions) or `project` (bound to a working directory). Deduplication is bucketed by scope — the same sentence written to two scopes is two records with two purposes.
+- **Status.** `pending` (extracted, not yet trusted) → `active` → `archived`. Only `active` records are eligible for injection.
+- **Provenance.** Every record keeps `sourceType`, `sourceRef`, version history and a tombstone. Forgetting writes a snapshot first, so the "snapshot & time travel" view can roll it back.
+- **Dedup.** Exact writes return the existing record instead of creating a twin; semantically identical writes merge sources; genuine conflicts wait in an inbox for a human to pick a side.
 
-## 开发
+## The panel
+
+A right-sidebar cockpit plus a `/mymemory` command that works in a plain terminal:
+
+```
+/mymemory status                 # counts, gate stats, cache-relevant budgets
+/mymemory conflicts              # open conflict inbox
+/mymemory skills                 # candidate / verified skill cards
+/mymemory skill <id> promote     # move a candidate to verified
+```
+
+The panel exposes exactly two editable text blocks — `SOUL.md` (the assistant's persona) and `USER.md` (the profile of you) — because those are the only two things a user actually rewrites. Everything else is a readout.
+
+## Privacy
+
+Facts, revisions, tombstones, conflicts and skills live in one SQLite file. No sync, no telemetry, no accounts. Files are created `0700`.
+
+Talking to a model means the injected portion leaves your machine and reaches your model provider. Local storage is not offline inference.
+
+Forgetting clears the live body, revisions and derived objects. It does not touch the host's historical transcripts, and it does not touch your provider's logs. "Do not mention again" is a **reference suppression**, not a deletion — the record stays.
+
+## Measuring it yourself
+
+```bash
+git clone https://github.com/diyun7e7q/dsh-mymemory.git && cd dsh-mymemory
+node scripts/benchmark.mjs      # offline synthetic retrieval benchmark
+```
+
+The bundled benchmark is deliberately narrow — 5 synthetic cases, retrieval and token-packing only. It reports **5/5 correct, ~32 ms, ~1.2K estimated injected tokens** on the development machine, and it says so in its own output:
+
+> `offline_synthetic_retrieval_only` — does not prove real task success or savings versus other plugins.
+
+## Development
 
 ```bash
 npm run typecheck   # tsc --noEmit
-npm run build       # src/ → lib/，只剥离类型
-npm test            # 全量测试
+npm run build       # src/ → lib/, type stripping only
+npm test            # full suite
 ```
 
-`lib/` 由 `src/` 生成，不手改；`build` 不替代类型检查。CLI 保留完整管理能力：`node lib/cli.js help`。
+`lib/` is generated from `src/` and must not be edited by hand. The full management surface is also available headless: `node lib/cli.js help`.
 
-## 限制
+## Limits
 
-- 只服务 DeepSeek Harness，不做跨宿主同步。
-- 依赖宿主暴露 llm 服务与会话路由；拿不到时退回显式配置的路由，不伪造成功。
-- 不索引完整聊天历史，只用抽取出的要点与观察。
-- 抽取质量取决于模型本身。这里的原则是宁少不滥：说不清来源的、一次性的、推测性的内容不进画像。
+- DeepSeek Harness only; no cross-host sync.
+- Depends on the host exposing `llm` and a session route. When neither is available it falls back to an explicitly configured route — and says so, instead of faking success.
+- Does not index the full transcript; only extracted points and observations.
+- Extraction quality is bounded by the model. The standing rule is prudence: no source, no entry; one-off, no entry; speculation, no entry.
 
-## License
+## License & Acknowledgments
 
-[MIT](LICENSE)
+[MIT](LICENSE).
+
+Built on the DeepSeek Harness plugin contract — the [cordis](https://github.com/deepseek-ai) plugin/context model, the slot system, the client module loader and the command UI. Design debts: SQLite for the write-ahead log and snapshot discipline, and the general "small fixed prefix, retrieval on demand" shape that RAG and editor-assistant tooling converged on independently.
+
+Design, implementation, tests and on-device verification were carried out with DeepSeek Harness as the development harness.
 
 ---
 
-本项目的设计、编码、测试与实机验证均由 DeepSeek Harness 驱动完成。
+## 中文说明
+
+**给 DeepSeek Harness 的长期记忆插件，不砸提示词缓存。**
+
+大多数记忆插件每一轮都把新总结塞进系统提示词开头。前缀一变，缓存全废，账单变贵。这个插件反过来：注入块小、具名、顺序固定、字节有硬上限，而且**没被确认的猜测根本不进提示词**。
+
+三个具体毛病，对应三种处理：
+
+- **前缀逐轮抖动** —— 这是最容易做错、代价最大的一条。注入走 `ctx.systemPrompt.section({name, order, text})`，段名与 order（80 / 85）运行期恒定，注入块在前缀里的位置就恒定；画像硬帽 4096 字符、`STATE.md` 800 字符、检索 512 token、常驻 0 —— 库里记的事再多也涨不上去。候选技能与 `pending` 记录只由 `search` 按需返回，永不进提示词。逐轮失效数为零。
+  唯一能让前缀失效的事件是画像正文真的变了，而这被刻意限流：最快 60 秒一次（`minIntervalMs`）、一天最多 20 次（`dailyLimit`），且模型被要求"信息没有实质变化就不返回"。正常干活一天是零到几次，不是每轮一次。
+- **记忆越用越歪** —— 写入前过三道闸：精确哈希 → 近重复签名（90%）→ 模型仲裁，并按 project / global 分桶去重。抽取出来的内容先落 `pending`，只有用户亲口确认、显式记住或跨会话复现才转正。
+- **不可审计** —— 每条记录带来源、版本、墓碑；遗忘前先落快照，能回滚。画像与人格是明文 Markdown，面板里直接改，下一轮生效。
+
+面板只放两块真正会被改的文本：`SOUL.md`（我的人格设定）和 `USER.md`（关于你的记忆概括）。「更新」只生成提案，点「采用」才写盘 —— 你手改过的措辞不会被模型静默盖掉。
+
+终端里照样能用：`/mymemory status`、`/mymemory conflicts`、`/mymemory skills`、`/mymemory skill <id> promote`。
+
+数据只在本机：一个 SQLite 文件 + 两个 Markdown 文件，权限 `0700`，无同步、无遥测、无账号。跟模型交互时，被注入的那部分会离开本机到达模型服务商 —— 本地存储不等于离线推理。
