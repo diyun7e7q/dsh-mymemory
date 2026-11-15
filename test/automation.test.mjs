@@ -1,0 +1,5 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {ruleCandidate, ExtractionQueue} from '../src/automation.ts';
+test('rule extraction ignores chat, negation and ambiguous corrections',()=>{assert.equal(ruleCandidate('你好'),null);assert.equal(ruleCandidate('不要记住我的预算'),null);assert.equal(ruleCandidate('我改变主意现在30元'),null);assert.ok(ruleCandidate('记住我买VPS预算40元'));assert.equal(ruleCandidate('记住我可能选A').status,'pending');});
+test('queue bounded, deduplicated, timed out and cancelled',async()=>{let calls=0;const q=new ExtractionQueue({maxQueue:1,timeoutMs:20,minIntervalMs:0,dailyLimit:3},async(_text,signal)=>{calls++;await new Promise((resolve,reject)=>{signal.addEventListener('abort',()=>reject(Error('aborted')),{once:true})});});assert.equal(q.enqueue('一'),true);assert.equal(q.enqueue('一'),false);assert.equal(q.enqueue('二'),false);await new Promise(r=>setTimeout(r,40));assert.equal(calls,1);assert.equal(q.stats.failed,1);await q.close();assert.equal(q.enqueue('三'),false);});

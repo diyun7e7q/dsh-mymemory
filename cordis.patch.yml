@@ -1,0 +1,6 @@
+- insert:
+    - id: mymemory
+      name: dsh-mymemory
+      # 记忆库默认落在 DSH 数据目录下；要单独指定就取消下面两行的注释。
+      # config:
+      #   dataDir: /path/to/memory

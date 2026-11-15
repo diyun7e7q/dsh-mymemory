@@ -1,0 +1,15 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';import {MemoryStore} from '../src/core.ts';import {recallQueries} from '../src/retrieval.ts';
+test('injection recall falls back level by level without loosening tool search',t=>{const dir=mkdtempSync(join(tmpdir(),'recall-'));const s=new MemoryStore(join(dir,'m.sqlite'));t.after(()=>{s.close();rmSync(dir,{recursive:true,force:true});});
+  const injection=s.add({content:'MyMemory 的注入分三段：人格 order 80、使用说明 order 85、按 query 重算的检索 order 90。',scope:'global',sourceType:'user_explicit'},{});s.add({content:'项目数据库选用 SQLite',scope:'global',sourceType:'user_explicit'},{});
+  const long='我上次让你改的注入顺序是多少';
+  assert.equal(s.search(long,{}).length,0,'strict tool search must stay AND');
+  const levels=recallQueries(long);
+  assert.ok(levels.length>=2,'long sentence needs fallback levels');
+  const hit=levels.flatMap(level=>level.flatMap(q=>s.search(q,{}))).find(r=>r.id===injection.id);
+  assert.ok(hit,'fallback level must recover the injection memory');
+  const fallbackLevel=levels[1];
+  assert.ok(fallbackLevel.every(w=>w.length>=2),'second level drops single-character noise');
+  assert.equal(recallQueries('').length,0);
+  assert.deepEqual(recallQueries('记忆')[0],['记忆'],'short query stays single level');
+  assert.deepEqual([...new Set(levels.flat(2))].length,levels.flat(2).length,'no duplicated queries');
+});

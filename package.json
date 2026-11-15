@@ -1,0 +1,46 @@
+{
+  "name": "dsh-mymemory",
+  "version": "0.3.1",
+  "private": true,
+  "description": "Long-term memory for DeepSeek Harness: distills identity, preferences and project notes from ordinary conversations, then injects what matters.",
+  "keywords": ["dsh", "deepseek-harness", "memory", "sqlite", "cordis-plugin"],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "mymemory": "lib/cli.js"
+  },
+  "engines": {
+    "node": ">=24.9.0"
+  },
+  "files": [
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "benchmark": "node scripts/benchmark.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.3"
+  }
+}

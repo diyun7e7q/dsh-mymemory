@@ -1,0 +1,28 @@
+node_modules/
+*.db*
+*.sqlite*
+private/
+*.tgz
+
+.superpowers/
+# 开发过程记录与本机一次性验证脚本：本地保留，不进仓库
+docs/
+AGENTS.md
+scripts/native-stdout.txt
+scripts/native-stderr.txt
+scripts/backup-legacy.ps1
+scripts/check-injection.mjs
+scripts/run-native.ps1
+scripts/verify-p0.mjs
+scripts/native-integration.mjs
+scripts/native-personalization.mjs
+scripts/native-recall-check.mjs
+scripts/probe-recall.mjs
+
+# 本地调试脚本与运行产物
+tmp-*.mjs
+probe-*.mjs
+*.log
+.memory.lock
+spill/
+forget/
