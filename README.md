@@ -109,6 +109,17 @@ Minimal, redacted:
         dataDir: /path/to/memory     # defaults to the host data directory
 ```
 
+### Moving the data directory
+
+`cordis.patch.yml` is the live config, not just a template: when the host links the plugin from it, editing that file edits a running plugin. To relocate the store, write a pointer instead — it wins over `config.dataDir` and stays out of version control:
+
+```json
+// <host home>/mymemory/<profile>/location.json
+{ "dataDir": "/path/to/memory" }
+```
+
+Commenting out `config.dataDir` with no pointer in place is how you end up with a silently empty database.
+
 Everything you would realistically tune lives in the panel; the rest lives here:
 
 | key | default | range | meaning |

@@ -1,6 +1,10 @@
 - insert:
     - id: mymemory
       name: dsh-mymemory
+      # 这个文件同时是运行时配置：profiles/<name>/node_modules/dsh-mymemory 指向它。
+      # 改它等于改正在跑的插件 —— 注释掉 config 会让插件回落到默认数据目录，表现就是「记忆全没了」。
+      # 迁移数据目录请写 location.json 指针（<host home>/mymemory/<profile>/location.json 的 dataDir），
+      # 它优先级最高，也不会被提交进版本库。
       # 记忆库默认落在 DSH 数据目录下；要单独指定就取消下面两行的注释。
       # config:
       #   dataDir: /path/to/memory
