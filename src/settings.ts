@@ -114,9 +114,9 @@ export function normalizeConfig(value:unknown) {
 export const Config = settingsConfig(normalizeConfig, {
   dataDir: editable('string', '记忆库目录，SQLite 与 SOUL.md 都放这里。改它等于换一个库，重启后生效。'),
   soulPath: editable('string', '人格文件所在目录，读其中的 SOUL.md。留空用 dataDir。'),
-  autoMode: editable('string', '自动记忆：off 关闭；candidates 待确认；conservative 仅明确记住自动生效。'),
-  coreBudget: editable('number', '常驻画像预算（估算 token）。0 = 不注入画像，只走检索。'),
-  retrievalBudget: editable('number', '检索结果注入预算（估算 token）。'),
+  autoMode: editable('string', '自动记忆：off 关闭；candidates 自动整理，抽到的先搁置；conservative 你说「记住」的当场生效。'),
+  coreBudget: editable('number', '常驻记忆预算（UTF-8 字节，0–2048）。身份、约束、偏好每轮都带上，超了挤掉靠后的。0 = 不注入。'),
+  retrievalBudget: editable('number', '检索结果注入预算（UTF-8 字节）。'),
   maxResults: editable('number', '单次检索最多返回条数，1–20。'),
   maxMemoryChars: editable('number', '单条记忆最大字符数，16–2000。'),
   extractionProvider: editable('string', '后台整理调用的模型提供方。留空跟随当前会话模型。'),
