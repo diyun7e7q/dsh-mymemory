@@ -7,4 +7,6 @@ const root=fileURLToPath(new URL('../',import.meta.url));
 // project isolation would silently see each other's records.
 const temp=join(dirname(root),'.mymemory-test-tmp');mkdirSync(temp,{recursive:true});
 const tests=readdirSync(join(root,'test')).filter(name=>name.endsWith('.test.mjs')).map(name=>join(root,'test',name));
-const result=spawnSync(process.execPath,['--test',...tests],{cwd:root,env:{...process.env,TEMP:temp,TMP:temp},stdio:'inherit',windowsHide:true});process.exitCode=result.status??1;
+// 宿主的 DSH_HOME 里有 location.json 指针，不隔离就会把测试写到真实记忆库。
+const home=join(temp,'home');mkdirSync(home,{recursive:true});
+const result=spawnSync(process.execPath,['--test',...tests],{cwd:root,env:{...process.env,TEMP:temp,TMP:temp,DSH_HOME:home},stdio:'inherit',windowsHide:true});process.exitCode=result.status??1;
