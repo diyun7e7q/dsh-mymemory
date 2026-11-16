@@ -21,3 +21,19 @@ export function uncertain(value: string): boolean {
 export function safeError(error: unknown): string {
   return error instanceof MemoryError ? error.code : 'STORAGE_OR_RUNTIME_ERROR';
 }
+
+/**
+ * 常驻三类的准入：只收"下个对话仍然成立"的陈述。
+ *
+ * 模型很爱把项目进度写成 profile（"正在改 mymemory 的注入段"），一旦混进常驻块，
+ * 每个对话都会带着一句昨天就过期的话。这里用形态判断兜住：带路径、日期、任务态的句子
+ * 本质是进度记录，降级成 project —— 记着，但不带入。判断对用户不可见。
+ */
+export function longTermShape(value: string): boolean {
+  const c = (value ?? '').trim();
+  if (c.length > 120) return false;                                   // 长句多半是交代背景
+  if (/[A-Za-z]:[\/]|(?:^|[\s(])\/(?:mnt|home|usr|etc|opt)\//.test(c)) return false;  // 路径
+  if (/\b20\d{2}[-/年]\d{1,2}|20\d{2}年|\d{1,2}月\d{1,2}日|今天|明天|昨天|下周|上周|本月|刚才/.test(c)) return false;
+  if (/正在|在做|还没|尚未|下一步|待办|TODO|进度|目前|暂时|先这样|刚刚/i.test(c)) return false;
+  return true;
+}
