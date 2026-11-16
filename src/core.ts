@@ -219,9 +219,11 @@ export class MemoryStore {
   budgets(){return validateBudgets(this.setting('budgets')??{});}
   // 常驻注入的选入规则：身份、偏好、约束三类才是"下个对话仍然成立"的东西。
   // 只取 active（pending/过期/待复核的一律不进常驻，那是待确认区的事）。
-  // 排序固定：profile → preference → constraint，同类按更新时间新→旧，
+  // 排序固定：profile → constraint → preference，同类按更新时间新→旧——
+  // 约束排在偏好前面："不许开代理""必须验证后提交"这类直接影响行为，
+  // 预算不够时宁可少一条口味偏好，也不能丢掉约束。
   // 这样前缀字节只随内容变化，不会因为 Map 顺序或时间戳抖动。
-  core(ctx:ScopeContext){const now=Date.now();const order=['profile','preference','constraint'];return this.all().filter(r=>this.accessible(r,ctx)&&order.indexOf(r.category)>=0&&r.status==='active'&&(!r.expiresAt||Date.parse(r.expiresAt)>now)&&(!r.reviewAt||Date.parse(r.reviewAt)>now)).sort((a,b)=>{const d=order.indexOf(a.category)-order.indexOf(b.category);return d!==0?d:String(b.updatedAt??'').localeCompare(String(a.updatedAt??''))}).slice(0,12);}
+  core(ctx:ScopeContext){const now=Date.now();const order=['profile','constraint','preference'];return this.all().filter(r=>this.accessible(r,ctx)&&order.indexOf(r.category)>=0&&r.status==='active'&&(!r.expiresAt||Date.parse(r.expiresAt)>now)&&(!r.reviewAt||Date.parse(r.reviewAt)>now)).sort((a,b)=>{const d=order.indexOf(a.category)-order.indexOf(b.category);return d!==0?d:String(b.updatedAt??'').localeCompare(String(a.updatedAt??''))}).slice(0,12);}
   metric(key:string,value=1){if(this.setting('maintenance'))return;this.db.prepare('INSERT INTO metrics VALUES (?,?,?) ON CONFLICT(day,key) DO UPDATE SET value=value+excluded.value').run(new Date().toISOString().slice(0,10),key,value);}
   stats(ctx:ScopeContext){return {schemaVersion:1,visibleRecords:this.all().filter(r=>this.accessible(r,ctx)).length,autoMode:this.setting('autoMode')??'candidates',modelExtraction:this.setting('model')?.enabled??false,metrics:this.db.prepare('SELECT * FROM metrics ORDER BY day,key').all(),tokenMethod:'UTF-8 byte upper-bound estimate; actual usage only when provider returns it',conversationUsage:null,cost:null};}
 }

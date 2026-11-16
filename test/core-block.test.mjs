@@ -76,7 +76,7 @@ test('identity sorts first, same category newest first', t=>{
   s.add(rec('自动化专业大三学生','profile'),ctx);
   s.add(rec('不许开代理','constraint'),ctx);
   const cats=s.core(ctx).map(r=>r.category);
-  assert.deepEqual(cats,['profile','preference','constraint']);
+  assert.deepEqual(cats,['profile','constraint','preference']);
 });
 
 test('core block fits its budget and is byte stable across renders', t=>{
