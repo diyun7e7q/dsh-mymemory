@@ -2,7 +2,7 @@ import {join} from 'node:path';
 import {existsSync,mkdirSync,writeFileSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {MemoryStore,scopeContext,type ScopeContext} from './core.ts';
-import {pack,estimateTokens,recallQueries} from './retrieval.ts';
+import {pack,estimateTokens,recallQueries,renderCore} from './retrieval.ts';
 import {safeError,fail,text} from './safety.ts';
 import {ruleCandidate,ExtractionQueue,extract} from './automation.ts';
 import {loadSoul} from './soul.ts';
@@ -105,10 +105,10 @@ export function apply(ctx:any,config:any={}) {
     try{const id=assembly.agent?.session?.id??assembly.scope?.id;const state=sessions.get(id);if(!state)return profileText;
       const query=(ruleCandidate(state.message)?.content??state.message).replace(/^(?:请|帮我|我们|我的|我想|之前的|关于)+/g,'').replace(/(?:是多少|是什么|进行到哪一步了|怎么样|还记得吗|[？?。！!])/g,' ').trim().slice(0,256);
       if(!query)return profileText;
-      const limits=s.budgets();const core=pack(s.core(state.ctx).filter(r=>personal!.allowed(r)),{budget:limits.coreBudget});
+      const limits=s.budgets();const coreRecords=s.core(state.ctx).filter(r=>personal!.allowed(r));const core=renderCore(coreRecords,{budget:limits.coreBudget});
       const found:any[]=[];const seen:Set<string>=new Set();
       for(const level of recallQueries(query)){for(const q of level){for(const r of s.search(q,state.ctx,{limit:limits.maxResults}).filter(r=>personal!.allowed(r))){if(seen.has(r.id))continue;seen.add(r.id);found.push(r);}}if(found.length)break;}
-      const results=found.filter(r=>!core.text.includes(JSON.stringify(r.id)));const related=pack(results,{budget:limits.retrievalBudget});
+      const coreIds=new Set(coreRecords.map((r:any)=>r.id));const results=found.filter(r=>!coreIds.has(r.id));const related=pack(results,{budget:limits.retrievalBudget});
       const result={text:core.text+related.text,count:core.count+related.count,estimatedTokens:core.estimatedTokens+related.estimatedTokens};
       const handoff=personal!.preferences().referenceHistory&&/继续|进度|交接|接手|进行到/.test(state.message)?work?.list('handoff',state.ctx)[0]:undefined;
       const index=handoff?`\n项目交接可按需读取：handoff_get id=${handoff.id}\n`:'';
