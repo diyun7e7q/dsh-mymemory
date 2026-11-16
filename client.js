@@ -102,163 +102,17 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /* 跟随主题的语义色：宿主换明暗，面板跟着变。 */
-    const V = {
-      fg: 'var(--dsw-alias-label-primary, #1f2328)',
-      fg2: 'var(--dsw-alias-label-secondary, #6b7280)',
-      line: 'var(--dsw-alias-border-l1, #e5e7eb)',
-      line2: 'var(--dsw-alias-border-l2, #d1d5db)',
-      bg1: 'var(--dsw-alias-bg-layer-1, #ffffff)',
-      bg2: 'var(--dsw-alias-bg-layer-2, #f6f7f9)',
-      brand: 'var(--dsw-alias-brand-primary, #2b6cf6)',
-    }
-
-    const S = {
-      page: {
-        maxWidth: '760px',
-        color: V.fg,
-        fontSize: '13px',
-        lineHeight: 1.65,
-        fontFamily: 'inherit',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      },
-      title: { fontSize: '15px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' },
-      sub: { color: V.fg2, fontSize: '12px' },
-      tabs: { display: 'flex', gap: '2px', borderBottom: '1px solid ' + V.line },
-      tab: (active) => ({
-        appearance: 'none',
-        border: 'none',
-        background: 'transparent',
-        color: active ? V.fg : V.fg2,
-        fontSize: '13px',
-        fontFamily: 'inherit',
-        padding: '6px 12px',
-        cursor: 'pointer',
-        borderBottom: '2px solid ' + (active ? V.brand : 'transparent'),
-        marginBottom: '-1px',
-      }),
-      area: {
-        width: '100%',
-        boxSizing: 'border-box',
-        minHeight: '20px',
-        background: V.bg1,
-        color: V.fg,
-        border: '1px solid ' + V.line2,
-        borderRadius: '8px',
-        padding: '10px 12px',
-        fontSize: '13px',
-        lineHeight: 1.7,
-        fontFamily: 'ui-monospace, Consolas, monospace',
-        resize: 'vertical',
-      },
-      meta: { display: 'flex', alignItems: 'center', gap: '10px', color: V.fg2, fontSize: '12px' },
-      foot: { display: 'flex', alignItems: 'center', gap: '8px' },
-      btn: {
-        background: V.brand,
-        color: '#fff',
-        border: 'none',
-        borderRadius: '6px',
-        padding: '5px 14px',
-        fontSize: '13px',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-      },
-      btnGhost: {
-        background: 'transparent',
-        color: V.fg,
-        border: '1px solid ' + V.line2,
-        borderRadius: '6px',
-        padding: '5px 12px',
-        fontSize: '13px',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-      },
-      btnDanger: {
-        background: 'transparent',
-        color: '#c0392b',
-        border: '1px solid ' + V.line2,
-        borderRadius: '6px',
-        padding: '2px 10px',
-        fontSize: '12px',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-      },
-      err: { color: '#c0392b', fontSize: '12px', wordBreak: 'break-word' },
-      ok: { color: '#1f7a45', fontSize: '12px' },
-      list: { display: 'flex', flexDirection: 'column', gap: '8px' },
-      item: {
-        border: '1px solid ' + V.line,
-        borderRadius: '8px',
-        padding: '10px 12px',
-        background: V.bg1,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-      },
-      itemText: { whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
-      tagRow: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' },
-      tag: {
-        fontSize: '11px',
-        lineHeight: 1.4,
-        padding: '1px 7px',
-        borderRadius: '999px',
-        background: V.bg2,
-        border: '1px solid ' + V.line,
-        color: V.fg2,
-      },
-      chip: (active) => ({
-        appearance: 'none',
-        border: '1px solid ' + (active ? V.brand : V.line),
-        background: active ? V.brand : 'transparent',
-        color: active ? '#fff' : V.fg2,
-        borderRadius: '999px',
-        padding: '2px 10px',
-        fontSize: '12px',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-      }),
-      mask: {
-        position: 'fixed',
-        inset: 0,
-        zIndex: 60,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0,0,0,.45)',
-      },
-      card: {
-        width: '760px',
-        maxWidth: 'calc(100vw - 48px)',
-        maxHeight: '86vh',
-        overflow: 'auto',
-        background: V.bg1,
-        color: V.fg,
-        border: '1px solid ' + V.line,
-        borderRadius: '10px',
-        boxShadow: '0 14px 48px rgba(0,0,0,.28)',
-        padding: '16px 18px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        fontSize: '13px',
-        lineHeight: 1.65,
-        fontFamily: 'inherit',
-      },
-      pill: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        border: 'none',
-        background: 'transparent',
-        color: 'inherit',
-        cursor: 'pointer',
-        fontSize: '13px',
-        fontFamily: 'inherit',
-        padding: '4px 6px',
-        borderRadius: '6px',
-      },
+    /* 玻璃星空：面板自带底色，不跟宿主题走。
+       深空渐变打底，两层星点错开呼吸，三团低透明光晕慢慢漂，卡片浮在上面当磨砂玻璃。
+       只用 react，样式全是内联对象——这个 bundle 没有构建步骤，写不了 CSS 文件。 */
+    const T = {
+      ink: '#F3F7FF',
+      ink2: 'rgba(243,247,255,.58)',
+      ink3: 'rgba(243,247,255,.34)',
+      line: 'rgba(255,255,255,.10)',
+      accent: '#9CBBFF',
+      font: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+      glass: 'linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018))',
     }
 
     const CATEGORY_LABEL = {
@@ -281,62 +135,71 @@ window.__ModuleLoader__.load({
 
     /* 单色层次：文字靠主题色 + 透明度分层，边框用中性灰。
        宿主会在明暗两套主题间切，写死 rgba(255,255,255,…) 在浅色主题下会白字白底。 */
+    const STARS_1 = 'radial-gradient(1.6px 1.6px at 24px 38px,#fff,transparent),radial-gradient(1.2px 1.2px at 132px 96px,rgba(200,220,255,.9),transparent),radial-gradient(1px 1px at 196px 22px,#fff,transparent),radial-gradient(1.4px 1.4px at 74px 168px,rgba(255,255,255,.85),transparent),radial-gradient(1px 1px at 168px 214px,rgba(190,215,255,.8),transparent),radial-gradient(1.2px 1.2px at 244px 142px,#fff,transparent),radial-gradient(.9px .9px at 108px 258px,rgba(255,255,255,.7),transparent),radial-gradient(1.1px 1.1px at 268px 268px,rgba(210,225,255,.75),transparent)'
+    const STARS_2 = 'radial-gradient(1.1px 1.1px at 60px 80px,rgba(255,255,255,.9),transparent),radial-gradient(.9px .9px at 210px 40px,rgba(180,210,255,.8),transparent),radial-gradient(1.3px 1.3px at 140px 190px,#fff,transparent),radial-gradient(1px 1px at 32px 230px,rgba(255,255,255,.7),transparent),radial-gradient(.8px .8px at 258px 168px,rgba(200,220,255,.7),transparent)'
+    const SKY = 'radial-gradient(560px 460px at -8% -6%,rgba(62,99,255,.30) 0%,transparent 62%),radial-gradient(500px 420px at 112% 10%,rgba(140,92,255,.22) 0%,transparent 60%),radial-gradient(640px 520px at 38% 106%,rgba(34,211,238,.10) 0%,transparent 66%),linear-gradient(180deg,#05070F 0%,#080B1A 55%,#05070F 100%)'
+
     const CX = {
-      shell: {
-        padding: '24px 28px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '32px',
-        color: V.fg,
-        fontFamily: 'inherit',
-        fontSize: '14px',
-        lineHeight: 1.75,
-        boxSizing: 'border-box',
+      drawer: {
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 2147483000,
+        width: 'min(460px, 96vw)',
+        overflow: 'hidden',
+        background: '#05070F',
+        borderLeft: '1px solid rgba(255,255,255,.08)',
+        boxShadow: '-28px 0 70px rgba(0,0,0,.55)',
+        color: T.ink,
+        fontFamily: T.font,
+        fontSize: '13px',
+        lineHeight: 1.5,
       },
-      head: { display: 'flex', alignItems: 'center', gap: '10px' },
-      brand: { display: 'flex', alignItems: 'center', gap: '8px', color: V.fg2 },
-      brandText: { fontSize: '11px', fontWeight: 500, letterSpacing: '.08em', textTransform: 'uppercase' },
-      close: {
+      sky: { position: 'absolute', inset: 0, pointerEvents: 'none', background: SKY },
+      stars1: { position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 1, backgroundImage: STARS_1, backgroundSize: '300px 300px', backgroundRepeat: 'repeat' },
+      stars2: { position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.72, backgroundImage: STARS_2, backgroundSize: '430px 430px', backgroundRepeat: 'repeat' },
+      inner: { position: 'relative', zIndex: 1, height: '100%', overflowY: 'auto', boxSizing: 'border-box' },
+      shell: { display: 'flex', flexDirection: 'column', padding: '20px 20px 26px', gap: '16px', boxSizing: 'border-box', minHeight: '100%' },
+      head: { display: 'flex', alignItems: 'center', gap: '9px' },
+      brand: { display: 'flex', alignItems: 'center', gap: '9px', fontSize: '15px', fontWeight: 600, letterSpacing: '-.01em' },
+      brandDot: { width: '9px', height: '9px', borderRadius: '50%', background: 'linear-gradient(140deg,#B7CBFF,#8C6BFF)', boxShadow: '0 0 12px rgba(150,175,255,.85)', display: 'inline-block' },
+      close: { appearance: 'none', border: 'none', background: 'transparent', color: T.ink3, fontSize: '11.5px', fontFamily: 'inherit', cursor: 'pointer', padding: '2px 0' },
+      tabs: { display: 'flex', gap: '2px', padding: '3px', borderRadius: '999px', background: 'rgba(255,255,255,.055)', border: '1px solid rgba(255,255,255,.09)', alignSelf: 'flex-start' },
+      tab: (active) => ({
         appearance: 'none',
         border: 'none',
-        background: 'transparent',
-        color: V.fg2,
-        opacity: 0.55,
-        fontSize: '11px',
-        letterSpacing: '.06em',
-        cursor: 'pointer',
+        background: active ? 'rgba(255,255,255,.15)' : 'transparent',
+        color: active ? '#fff' : T.ink2,
+        boxShadow: active ? 'inset 0 1px 0 rgba(255,255,255,.22)' : 'none',
+        fontSize: '12.5px',
         fontFamily: 'inherit',
-        padding: '2px 0',
-      },
+        padding: '6px 15px',
+        borderRadius: '999px',
+        cursor: 'pointer',
+        transition: 'color .18s ease, background .18s ease',
+      }),
+      page: { display: 'flex', flexDirection: 'column', gap: '14px' },
       block: {
-        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
-        padding: '20px 22px',
-        background: 'rgba(127,127,127,.035)',
-        border: '1px solid rgba(127,127,127,.12)',
-        borderRadius: '2px',
+        gap: '9px',
+        padding: '18px 20px',
+        background: T.glass,
+        border: '1px solid rgba(255,255,255,.10)',
+        borderRadius: '18px',
+        backdropFilter: 'blur(24px) saturate(1.5)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
+        boxShadow: '0 12px 42px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.14)',
       },
-      blockHead: { display: 'flex', alignItems: 'baseline', gap: '10px' },
-      eyebrow: { fontSize: '11px', fontWeight: 500, letterSpacing: '.08em', color: V.fg2, opacity: 0.85 },
-      hint: { fontSize: '11px', color: V.fg2, opacity: 0.45 },
-      body: {
-        margin: 0,
-        maxWidth: '65ch',
-        fontSize: '14px',
-        lineHeight: 1.75,
-        color: V.fg,
-        opacity: 0.88,
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        cursor: 'text',
-      },
-      empty: { margin: 0, maxWidth: '65ch', fontSize: '14px', lineHeight: 1.75, color: V.fg2, opacity: 0.45 },
+      blockHead: { display: 'flex', alignItems: 'baseline', gap: '9px' },
+      eyebrow: { fontSize: '11px', fontWeight: 600, letterSpacing: '.06em', color: T.ink2 },
+      hint: { fontSize: '11px', color: T.ink3 },
+      body: { margin: 0, fontSize: '14px', lineHeight: 1.8, color: 'rgba(243,247,255,.88)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', cursor: 'text', letterSpacing: '.002em' },
+      empty: { margin: 0, fontSize: '14px', lineHeight: 1.8, color: T.ink3 },
       editor: {
         display: 'block',
         width: '100%',
-        maxWidth: '65ch',
         margin: 0,
         padding: 0,
         background: 'transparent',
@@ -345,52 +208,38 @@ window.__ModuleLoader__.load({
         boxShadow: 'none',
         resize: 'none',
         overflow: 'hidden',
-        color: V.fg,
-        opacity: 0.92,
+        color: 'rgba(243,247,255,.95)',
         fontFamily: 'inherit',
         fontSize: '14px',
-        lineHeight: 1.75,
+        lineHeight: 1.8,
       },
       ghost: (show) => ({
         appearance: 'none',
         border: 'none',
         background: 'transparent',
-        color: V.fg2,
-        opacity: show ? 0.6 : 0,
-        transition: 'opacity .16s ease',
+        color: T.ink2,
+        opacity: show ? 0.85 : 0,
+        transition: 'opacity .16s ease, color .16s ease',
         fontSize: '11px',
         letterSpacing: '.06em',
         cursor: 'pointer',
         fontFamily: 'inherit',
         padding: 0,
       }),
-      saved: (on) => ({
-        marginLeft: 'auto',
-        fontSize: '11px',
-        letterSpacing: '.06em',
-        color: V.fg2,
-        opacity: on ? 0.7 : 0,
-        transition: 'opacity .3s ease',
-      }),
-      err: { margin: 0, fontSize: '12px', color: '#c0392b', wordBreak: 'break-word' },
-      metrics: { display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' },
-      fold: {
-        appearance: 'none',
-        border: 'none',
-        background: 'transparent',
-        color: V.fg2,
-        opacity: 0.45,
-        fontSize: '12px',
-        letterSpacing: '.06em',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        padding: 0,
-        alignSelf: 'flex-start',
-      },
-      metricList: { display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px 0 0' },
+      saved: (on) => ({ marginLeft: 'auto', fontSize: '11px', letterSpacing: '.06em', color: T.ink3, opacity: on ? 0.85 : 0, transition: 'opacity .3s ease' }),
+      err: { margin: 0, fontSize: '12px', color: '#FF9A9A', wordBreak: 'break-word' },
+      meter: { display: 'flex', alignItems: 'center', gap: '10px' },
+      meterTxt: { fontSize: '11px', color: T.ink3, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' },
+      track: { flex: '1 1 auto', height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,.10)', overflow: 'hidden' },
+      fill: { display: 'block', height: '100%', borderRadius: '2px', background: 'linear-gradient(90deg,#6E9BFF,#A98CFF 70%,#C7A9FF)', boxShadow: '0 0 10px rgba(140,160,255,.6)' },
+      footRow: { display: 'flex', alignItems: 'center', gap: '10px' },
+      link: { appearance: 'none', border: 'none', background: 'transparent', color: 'rgba(243,247,255,.5)', fontSize: '11.5px', fontFamily: 'inherit', cursor: 'pointer', padding: 0 },
+      metrics: { display: 'flex', flexDirection: 'column', gap: '10px' },
+      fold: { appearance: 'none', border: 'none', background: 'transparent', color: T.ink3, fontSize: '11.5px', fontFamily: 'inherit', cursor: 'pointer', padding: 0, alignSelf: 'flex-start' },
+      metricList: { display: 'flex', flexDirection: 'column', gap: '7px', padding: '12px 16px', background: 'rgba(255,255,255,.028)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '14px' },
       metricRow: { display: 'flex', alignItems: 'baseline', gap: '12px' },
-      metricKey: { fontSize: '11px', letterSpacing: '.06em', color: V.fg2, opacity: 0.55, minWidth: '86px' },
-      metricVal: { fontSize: '12px', color: V.fg, opacity: 0.7 },
+      metricKey: { fontSize: '11px', letterSpacing: '.04em', color: T.ink3, minWidth: '78px' },
+      metricVal: { fontSize: '11.5px', color: 'rgba(243,247,255,.72)' },
       badgeWrap: { position: 'relative', display: 'inline-flex' },
       badge: (hot) => ({
         appearance: 'none',
@@ -402,35 +251,13 @@ window.__ModuleLoader__.load({
         padding: 0,
         border: 'none',
         background: 'transparent',
-        color: hot ? V.fg : V.fg2,
+        color: hot ? '#fff' : T.ink2,
         opacity: hot ? 1 : 0.55,
         transition: 'opacity .16s ease, color .16s ease',
         cursor: 'pointer',
       }),
-      dot: {
-        position: 'absolute',
-        top: '4px',
-        right: '4px',
-        width: '4px',
-        height: '4px',
-        borderRadius: '50%',
-        background: V.fg2,
-        opacity: 0.7,
-        pointerEvents: 'none',
-      },
+      dot: { position: 'absolute', top: '4px', right: '4px', width: '4px', height: '4px', borderRadius: '50%', background: '#8FB4FF', boxShadow: '0 0 6px rgba(143,180,255,.9)', pointerEvents: 'none' },
       scrim: { position: 'fixed', inset: 0, zIndex: 2147482999, background: 'transparent' },
-      drawer: {
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 2147483000,
-        width: 'min(460px, 96vw)',
-        overflow: 'auto',
-        background: V.bg1,
-        borderLeft: '1px solid rgba(127,127,127,.14)',
-        boxShadow: '-24px 0 60px rgba(0,0,0,.18)',
-      },
     }
 
     /* 浮层从窗口最顶端开始就会被系统标题栏压住：Windows 下那一块被最小化与关闭按钮占着，
@@ -501,7 +328,7 @@ window.__ModuleLoader__.load({
         ? h('textarea', {
             style: CX.editor,
             value: draft,
-            rows: Math.max(3, lines),
+            rows: Math.max(4, lines),
             spellCheck: false,
             autoFocus: true,
             onKeyDown,
@@ -553,7 +380,7 @@ window.__ModuleLoader__.load({
       return h(
         'div',
         { style: CX.metrics },
-        h('button', { style: CX.fold, onClick: () => setOpen(!open) }, open ? '收起指标' : '底层指标'),
+        h('button', { style: CX.fold, onClick: () => setOpen(!open) }, open ? '收起 ⌃' : '高级 ›'),
         open
           ? h(
               'div',
@@ -568,51 +395,79 @@ window.__ModuleLoader__.load({
 
     function Cockpit(props) {
       const st = useUI()
-      const docs = (st.data && st.data.docs) || {}
+      const [tab, setTab] = React.useState('summary')
       const [proposal, setProposal] = React.useState('')
       React.useEffect(() => {
         if (!ui.data) refresh()
       }, [])
       const closable = Boolean(props && props.onClose)
+      const data = st.data || {}
+      /* 常驻块的真实占用：条数与字节都由 panel.ts 现算，不是估算。 */
+      const core = data.core || null
+      const pct = core ? Math.min(100, Math.round((core.bytes / Math.max(1, core.budget)) * 100)) : 0
+      const tabBtn = (key, label) => h('button', { key: key, style: CX.tab(tab === key), onClick: () => setTab(key) }, label)
       return h(
         'div',
         { style: CX.shell },
         h(
           'div',
           { style: CX.head },
-          h('div', { style: CX.brand }, h(Icon), h('span', { style: CX.brandText }, '记忆')),
+          h('div', { style: CX.brand }, h('i', { style: CX.brandDot }), '记忆'),
           h('span', { style: { flex: '1 1 auto' } }),
-          h('button', {
-            style: { appearance: 'none', border: '1px solid rgba(127,127,127,.24)', background: 'transparent', color: V.fg2, fontSize: '12px', padding: '3px 10px', borderRadius: '6px', marginRight: '6px', cursor: st.saving ? 'default' : 'pointer', opacity: st.saving ? 0.55 : 1 },
-            disabled: Boolean(st.saving),
-            title: '用当前记忆重新整理这份概括',
-            onClick: () => { runData({ op: 'distill' }).then((data) => { if (data && data.proposal) setProposal(data.proposal) }) },
-          }, st.saving ? '整理中…' : '更新'),
           closable ? h('button', { style: CX.close, onClick: props.onClose, title: '关闭' }, '关闭') : null,
         ),
+        h('nav', { style: CX.tabs }, tabBtn('summary', '概括'), tabBtn('settings', '设定')),
         st.error ? h('p', { style: CX.err }, st.error) : null,
-        h(DocBlock, { kind: 'soul', eyebrow: '角色设定', hint: '我的人格，随时可改' }),
-        h(DocBlock, { kind: 'user', eyebrow: '记忆概括', hint: '关于你，自动维护', placeholder: '还没有关于你的记忆。' }),
-        proposal
+        tab === 'summary'
           ? h(
               'div',
-              { style: CX.block },
+              { style: CX.page },
+              h(DocBlock, { kind: 'user', eyebrow: '记忆概括', hint: '关于你，自动维护', placeholder: '还没有关于你的记忆。' }),
+              core
+                ? h(
+                    'div',
+                    { style: CX.meter },
+                    h('span', { style: CX.meterTxt }, core.count + ' 件事'),
+                    h('div', { style: CX.track }, h('i', { style: Object.assign({}, CX.fill, { width: pct + '%' }) })),
+                    h('span', { style: CX.meterTxt }, core.bytes + ' / ' + core.budget + ' 字节'),
+                  )
+                : null,
               h(
                 'div',
-                { style: CX.blockHead },
-                h('span', { style: CX.eyebrow }, '整理后的样子'),
-                h('span', { style: CX.hint }, '点了采用才写进文件'),
-                h('span', { style: { flex: '1 1 auto' } }),
-                h('button', { style: CX.ghost(true), onClick: () => setProposal('') }, '丢弃'),
+                { style: CX.footRow },
                 h('button', {
-                  style: CX.ghost(true),
-                  onClick: () => { runData({ op: 'distill_apply', text: proposal }).then((data) => { if (data) setProposal('') }) },
-                }, '采用'),
+                  style: Object.assign({}, CX.link, st.saving ? { opacity: 0.5 } : null),
+                  disabled: Boolean(st.saving),
+                  title: '用当前记忆重新整理这份概括',
+                  onClick: () => { runData({ op: 'distill' }).then((data) => { if (data && data.proposal) setProposal(data.proposal) }) },
+                }, st.saving ? '整理中…' : '重新整理'),
               ),
-              h('p', { style: CX.body }, proposal),
+              proposal
+                ? h(
+                    'div',
+                    { style: CX.block },
+                    h(
+                      'div',
+                      { style: CX.blockHead },
+                      h('span', { style: CX.eyebrow }, '整理后的样子'),
+                      h('span', { style: CX.hint }, '点了采用才写进文件'),
+                      h('span', { style: { flex: '1 1 auto' } }),
+                      h('button', { style: CX.ghost(true), onClick: () => setProposal('') }, '丢弃'),
+                      h('button', {
+                        style: CX.ghost(true),
+                        onClick: () => { runData({ op: 'distill_apply', text: proposal }).then((data) => { if (data) setProposal('') }) },
+                      }, '采用'),
+                    ),
+                    h('p', { style: CX.body }, proposal),
+                  )
+                : null,
             )
-          : null,
-        h(Metrics, { data: st.data || {} }),
+          : h(
+              'div',
+              { style: CX.page },
+              h(DocBlock, { kind: 'soul', eyebrow: '人格', hint: '怎么说话，改完下一句生效' }),
+              h(Metrics, { data: data }),
+            ),
       )
     }
 
@@ -641,13 +496,33 @@ window.__ModuleLoader__.load({
           pending ? h('span', { style: CX.dot }) : null,
         ),
         st.open ? h('div', { style: CX.scrim, onClick: () => setUI({ open: false }) }) : null,
-        st.open ? h('aside', { style: Object.assign({}, CX.drawer, { top: chromeInset() + 'px' }) }, h(Cockpit, { onClose: () => setUI({ open: false }) })) : null,
+        st.open
+          ? h(
+              'aside',
+              { style: Object.assign({}, CX.drawer, { top: chromeInset() + 'px' }) },
+              h('div', { style: CX.sky }),
+              h('div', { style: CX.stars1 }),
+              h('div', { style: CX.stars2 }),
+              h('div', { style: CX.inner }, h(Cockpit, { onClose: () => setUI({ open: false }) })),
+            )
+          : null,
       )
     }
 
     function Panel(props) {
       const embedded = props && props.embedded
-      return h('div', { style: embedded ? null : { padding: '8px 0' } }, h(Cockpit))
+      /* 嵌进设置页时没有抽屉，星星也得有底：自带一块圆角深空，别让白底透上来。 */
+      const frame = embedded
+        ? { position: 'relative', overflow: 'hidden', borderRadius: '16px', background: '#05070F', color: T.ink, fontFamily: T.font }
+        : { position: 'relative', overflow: 'hidden', background: '#05070F', color: T.ink, fontFamily: T.font }
+      return h(
+        'div',
+        { style: frame },
+        h('div', { style: CX.sky }),
+        h('div', { style: CX.stars1 }),
+        h('div', { style: CX.stars2 }),
+        h('div', { style: { position: 'relative', zIndex: 1 } }, h(Cockpit)),
+      )
     }
 
     function apply(ctx) {
