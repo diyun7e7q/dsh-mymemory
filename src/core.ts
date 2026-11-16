@@ -217,7 +217,11 @@ export class MemoryStore {
   setting(key:string,value?:unknown):any{if(value!==undefined)this.transaction(()=>{this.db.prepare('INSERT OR REPLACE INTO settings VALUES (?,?)').run(key,JSON.stringify(value));if((['autoMode','model','budgets','personalization','ignoredMemoryLabels'].includes(key)||key.startsWith('temporary:')))this.bumpEpoch();});const r=this.db.prepare('SELECT body FROM settings WHERE key=?').get(key) as any;return r?JSON.parse(r.body):undefined;}
   commitExtraction(candidates:string[],ctx:ScopeContext,epoch:number,sourceRef:MemoryInput['sourceRef']){return this.transaction(()=>{if((this.setting('writeEpoch')??0)!==epoch||this.setting('autoMode')==='off'||!this.setting('model')?.enabled)return false;for(const content of candidates)this.add({content,scope:ctx.project?'project':'global',sourceType:'inferred',status:'pending',sourceRef},ctx);return true;});}
   budgets(){return validateBudgets(this.setting('budgets')??{});}
-  core(ctx:ScopeContext){const now=Date.now();return this.all().filter(r=>this.accessible(r,ctx)&&r.category==='profile'&&r.status==='active'&&(!r.expiresAt||Date.parse(r.expiresAt)>now)&&(!r.reviewAt||Date.parse(r.reviewAt)>now)).slice(0,8);}
+  // 常驻注入的选入规则：身份、偏好、约束三类才是"下个对话仍然成立"的东西。
+  // 只取 active（pending/过期/待复核的一律不进常驻，那是待确认区的事）。
+  // 排序固定：profile → preference → constraint，同类按更新时间新→旧，
+  // 这样前缀字节只随内容变化，不会因为 Map 顺序或时间戳抖动。
+  core(ctx:ScopeContext){const now=Date.now();const order=['profile','preference','constraint'];return this.all().filter(r=>this.accessible(r,ctx)&&order.indexOf(r.category)>=0&&r.status==='active'&&(!r.expiresAt||Date.parse(r.expiresAt)>now)&&(!r.reviewAt||Date.parse(r.reviewAt)>now)).sort((a,b)=>{const d=order.indexOf(a.category)-order.indexOf(b.category);return d!==0?d:String(b.updatedAt??'').localeCompare(String(a.updatedAt??''))}).slice(0,12);}
   metric(key:string,value=1){if(this.setting('maintenance'))return;this.db.prepare('INSERT INTO metrics VALUES (?,?,?) ON CONFLICT(day,key) DO UPDATE SET value=value+excluded.value').run(new Date().toISOString().slice(0,10),key,value);}
   stats(ctx:ScopeContext){return {schemaVersion:1,visibleRecords:this.all().filter(r=>this.accessible(r,ctx)).length,autoMode:this.setting('autoMode')??'candidates',modelExtraction:this.setting('model')?.enabled??false,metrics:this.db.prepare('SELECT * FROM metrics ORDER BY day,key').all(),tokenMethod:'UTF-8 byte upper-bound estimate; actual usage only when provider returns it',conversationUsage:null,cost:null};}
 }
