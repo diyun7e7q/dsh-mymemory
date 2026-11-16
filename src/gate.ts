@@ -218,6 +218,9 @@ export class IncrementalGate {
     if(decision.action==='NOOP'){
       if(decision.targetId){
         this.store.touch(decision.targetId);
+        // 同一条事实在另一个会话里再次出现：跨会话复现本身就是佐证，把待确认提正。
+        // 同一会话里重复不算——那多半是同段话被抽了两次。
+        try{const t=this.store.get(decision.targetId,ctx);if(t.status==='pending'&&input.sourceType==='inferred'&&input.sourceRef?.sessionId&&t.sourceRef?.sessionId&&input.sourceRef.sessionId!==t.sourceRef.sessionId)return {record:this.store.approve(t.id,t.version,ctx)};}catch{}
         // 重复写入要把既有记录交回去：返回 undefined 会被调用方当成失败，工具层退化成交出一个决策对象。
         try{return {record:this.store.get(decision.targetId,ctx)};}catch{return {};}
       }
@@ -230,6 +233,9 @@ export class IncrementalGate {
       const trusted=['user_explicit','user_remember','user_confirmed','user_correction'].includes(input.sourceType??'');
       // 待确认的旧记录撞上用户亲口说的内容：只合并来源不够，得换成用户原话并提为 active，否则用户的话停在待确认区等于没记住。
       if(target.status==='pending'&&trusted)return {record:this.store.update(target.id,{content:decision.content,expectedVersion:target.version,sourceType:input.sourceType,sourceRef:input.sourceRef},ctx)};
+      // 模型抽出来的同一条事实在另一个会话里重现：跨会话复现就是佐证，提为 active。
+      // 同一会话内的近重复不提——那是同一段话被抽了两遍，不是两次独立观察。
+      if(target.status==='pending'&&input.sourceType==='inferred'&&input.sourceRef?.sessionId&&target.sourceRef?.sessionId&&input.sourceRef.sessionId!==target.sourceRef.sessionId)return {record:this.store.approve(target.id,target.version,ctx)};
       this.store.mergeSource(decision.targetId,input.sourceRef);
       return {record:this.store.get(decision.targetId,ctx)};
     }
